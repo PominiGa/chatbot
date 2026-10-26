@@ -29,6 +29,16 @@ def test_parses_plain_text_message() -> None:
     )
 
 
+def test_uses_phone_number_when_contact_comes_with_hidden_id() -> None:
+    payload = webhook(remote_jid="123456789@lid")
+    payload["data"]["key"]["remoteJidAlt"] = "5511999999999@s.whatsapp.net"
+
+    parsed = parse_incoming_message(payload)
+
+    assert parsed is not None
+    assert parsed.chat_id == "5511999999999@s.whatsapp.net"
+
+
 def test_parses_extended_text_message() -> None:
     payload = webhook(message={"extendedTextMessage": {"text": "Qual o horário?"}})
 

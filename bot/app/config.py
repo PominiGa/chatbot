@@ -13,9 +13,11 @@ class Settings(BaseSettings):
     evolution_url: str = "http://localhost:8080"
     evolution_api_key: str
     webhook_token: str
+    # Números que o bot responde, separados por vírgula (ex.: 5511999999999). Vazio = todos
+    allowed_numbers: str = ""
 
     ollama_url: str = "http://localhost:11434"
-    ollama_model: str = "qwen3:4b"
+    ollama_model: str = "qwen3:4b-instruct"
     ollama_temperature: float = 0.3
     ollama_timeout_seconds: float = 120
 
@@ -30,6 +32,10 @@ class Settings(BaseSettings):
     )
 
     log_level: str = "INFO"
+
+    def is_number_allowed(self, chat_id: str) -> bool:
+        allowed = {number.strip() for number in self.allowed_numbers.split(",") if number.strip()}
+        return not allowed or chat_id.split("@")[0] in allowed
 
     def load_system_prompt(self) -> str:
         return self.system_prompt_path.read_text(encoding="utf-8").strip()

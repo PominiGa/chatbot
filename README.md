@@ -10,27 +10,30 @@ Cliente ──► WhatsApp ──► Evolution API ──webhook──► bot (F
 
 ## Como rodar
 
-Requisitos: Docker Desktop aberto.
+Este compose sobe apenas o **Ollama** e o **bot**. A Evolution API, o Postgres e o Redis são os que já rodam no projeto Automacao, na rede Docker `venv_evolution-net`. Se eles mudarem, ajuste as variáveis comentadas no `.env.example`.
+
+Requisitos: Docker Desktop aberto e a Evolution API do projeto Automacao rodando.
 
 ```powershell
-copy .env.example .env      # edite as chaves e senhas
+copy .env.example .env      # preencha a chave da Evolution, o token e os números de teste
 docker compose up -d --build
 ```
 
 Na primeira execução o modelo (~2,5 GB) é baixado; acompanhe com `docker compose logs -f ollama-pull`.
 
-### Conectar o WhatsApp
+### Apontar a Evolution para o bot
 
-1. Crie uma instância (troque `SUA_CHAVE` pelo `EVOLUTION_API_KEY` do `.env`):
+Configure o webhook da instância (troque `SUA_CHAVE`, `INSTANCIA` e `SEU_TOKEN`):
 
-   ```powershell
-   curl.exe -X POST http://localhost:8080/instance/create `
-     -H "apikey: SUA_CHAVE" -H "Content-Type: application/json" `
-     -d '{\"instanceName\": \"atendimento\", \"integration\": \"WHATSAPP-BAILEYS\", \"qrcode\": true}'
-   ```
+```powershell
+curl.exe -X POST http://localhost:8081/webhook/set/INSTANCIA `
+  -H "apikey: SUA_CHAVE" -H "Content-Type: application/json" `
+  -d '{\"webhook\": {\"enabled\": true, \"url\": \"http://chatbot-bot-1:8000/webhook/SEU_TOKEN\", \"events\": [\"MESSAGES_UPSERT\"]}}'
+```
 
-2. Leia o QR Code com o WhatsApp do número da empresa. Ele vem na resposta acima, ou pode ser obtido pelo painel em http://localhost:8080/manager.
-3. Mande uma mensagem de outro celular para esse número. O bot responde.
+### Testar com segurança
+
+Preencha `ALLOWED_NUMBERS` no `.env` (ex.: `5511999999999,5511888888888`) para o bot responder **apenas** esses números. Os outros são ignorados e aparecem no log (`docker compose logs -f bot`). Deixe vazio para atender todos.
 
 ## Personalizar o atendimento
 

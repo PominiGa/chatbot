@@ -25,9 +25,13 @@ def sender() -> FakeSender:
 
 
 @pytest.fixture
-def client(sender: FakeSender) -> Iterator[TestClient]:
+def settings() -> Settings:
+    return Settings(evolution_api_key="chave", webhook_token="segredo")
+
+
+@pytest.fixture
+def client(sender: FakeSender, settings: Settings) -> Iterator[TestClient]:
     app = create_app()
-    settings = Settings(evolution_api_key="chave", webhook_token="segredo")
     service = ChatService(
         FakeLanguageModel(answer="Olá!"), sender, InMemoryHistory(), "prompt", "erro"
     )
@@ -57,6 +61,19 @@ def test_ignores_irrelevant_events(client: TestClient, sender: FakeSender) -> No
 
     assert response.json() == {"status": "ignored"}
     assert sender.sent == []
+
+
+def test_answers_only_allowed_numbers(
+    client: TestClient, sender: FakeSender, settings: Settings
+) -> None:
+    settings.allowed_numbers = "5511888888888, 5511999999999"
+    client.post("/webhook/segredo", json=PAYLOAD)
+
+    settings.allowed_numbers = "5511888888888"
+    response = client.post("/webhook/segredo", json=PAYLOAD)
+
+    assert response.json() == {"status": "ignored"}
+    assert sender.sent == [("loja", "5511999999999@s.whatsapp.net", "Olá!")]
 
 
 def test_health(client: TestClient) -> None:

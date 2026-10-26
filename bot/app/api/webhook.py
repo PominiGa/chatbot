@@ -1,3 +1,4 @@
+import logging
 import secrets
 from typing import Annotated, Any
 
@@ -7,6 +8,7 @@ from app.config import Settings
 from app.integrations.evolution import parse_incoming_message
 from app.services.chat_service import ChatService
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
@@ -36,6 +38,9 @@ async def receive_webhook(
 
     message = parse_incoming_message(payload)
     if message is None:
+        return {"status": "ignored"}
+    if not settings.is_number_allowed(message.chat_id):
+        logger.info("Ignorando %s: fora de ALLOWED_NUMBERS", message.chat_id)
         return {"status": "ignored"}
 
     # A IA leva alguns segundos; respondemos o webhook na hora e processamos em segundo plano

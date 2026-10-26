@@ -19,7 +19,7 @@ def parse_incoming_message(payload: dict[str, Any]) -> IncomingMessage | None:
 
     data = payload.get("data") or {}
     key = data.get("key") or {}
-    chat_id = key.get("remoteJid") or ""
+    chat_id = _resolve_chat_id(key)
     if key.get("fromMe") or not chat_id or chat_id.endswith(IGNORED_CHAT_SUFFIXES):
         return None
 
@@ -28,6 +28,14 @@ def parse_incoming_message(payload: dict[str, Any]) -> IncomingMessage | None:
         return None
 
     return IncomingMessage(instance=payload.get("instance", ""), chat_id=chat_id, text=text)
+
+
+def _resolve_chat_id(key: dict[str, Any]) -> str:
+    # Alguns contatos chegam com um ID oculto (@lid); o número real vem em remoteJidAlt
+    chat_id = key.get("remoteJid") or ""
+    if chat_id.endswith("@lid") and key.get("remoteJidAlt"):
+        return key["remoteJidAlt"]
+    return chat_id
 
 
 def _extract_text(message: dict[str, Any]) -> str:

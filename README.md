@@ -1,4 +1,4 @@
-# Chatbot de atendimento no WhatsApp
+﻿# Chatbot de atendimento no WhatsApp
 
 Bot que responde clientes no WhatsApp usando IA local. A [Evolution API](https://doc.evolution-api.com) conecta o WhatsApp e o [Ollama](https://ollama.com) roda o modelo de linguagem na sua máquina, sem custo por mensagem.
 
@@ -26,12 +26,12 @@ Na primeira execução o modelo (~2,5 GB) é baixado; acompanhe com `docker comp
 1. Crie uma instância (troque `SUA_CHAVE` pelo `EVOLUTION_API_KEY` do `.env`):
 
    ```powershell
-   curl.exe -X POST http://localhost:8080/instance/create `
+   curl.exe -X POST http://localhost:8081/instance/create `
      -H "apikey: SUA_CHAVE" -H "Content-Type: application/json" `
      -d '{\"instanceName\": \"atendimento\", \"integration\": \"WHATSAPP-BAILEYS\", \"qrcode\": true}'
    ```
 
-2. Abra http://localhost:8080/manager (login: URL `http://localhost:8080` + `EVOLUTION_API_KEY`) e leia o QR Code com o WhatsApp do número da empresa.
+2. Abra http://localhost:8081/manager (login: URL `http://localhost:8081` + `EVOLUTION_API_KEY`) e leia o QR Code com o WhatsApp do número da empresa.
 3. Mande uma mensagem de **outro** celular para esse número. O bot responde.
 
 ### Testar com segurança

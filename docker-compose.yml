@@ -1,5 +1,3 @@
-# Sobe a Evolution API, a IA e o bot. O Postgres e o Redis são os que já rodam
-# na rede "venv_evolution-net"; a Evolution usa um banco próprio (chatbot_evolution).
 services:
   evolution-api:
     image: evoapicloud/evolution-api:v2.3.7
@@ -11,15 +9,15 @@ services:
       AUTHENTICATION_API_KEY: ${EVOLUTION_API_KEY}
       DATABASE_ENABLED: "true"
       DATABASE_PROVIDER: postgresql
-      DATABASE_CONNECTION_URI: ${EVOLUTION_DATABASE_URI}
+      DATABASE_CONNECTION_URI: postgresql://evolution:${POSTGRES_PASSWORD}@postgres:5432/evolution?schema=public
       DATABASE_CONNECTION_CLIENT_NAME: chatbot
       DATABASE_SAVE_DATA_INSTANCE: "true"
       DATABASE_SAVE_DATA_NEW_MESSAGE: "true"
       DATABASE_SAVE_DATA_CONTACTS: "true"
       DATABASE_SAVE_DATA_CHATS: "true"
       CACHE_REDIS_ENABLED: "true"
-      CACHE_REDIS_URI: redis://redis:6379/4
-      CACHE_REDIS_PREFIX_KEY: chatbot-evolution
+      CACHE_REDIS_URI: redis://redis:6379/0
+      CACHE_REDIS_PREFIX_KEY: evolution
       CACHE_LOCAL_ENABLED: "false"
       WEBHOOK_GLOBAL_ENABLED: "true"
       WEBHOOK_GLOBAL_URL: http://bot:8000/webhook/${WEBHOOK_TOKEN}
@@ -27,9 +25,36 @@ services:
       WEBHOOK_EVENTS_MESSAGES_UPSERT: "true"
     volumes:
       - evolution_instances:/evolution/instances
-    networks:
-      - default
-      - evolution
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: evolution
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: evolution
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U evolution"]
+      interval: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 10
 
   ollama:
     image: ollama/ollama:0.40.10
@@ -67,19 +92,15 @@ services:
       ALLOWED_NUMBERS: ${ALLOWED_NUMBERS:-}
       OLLAMA_URL: http://ollama:11434
       OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen3:4b-instruct}
-      REDIS_URL: ${REDIS_URL:-redis://redis:6379/3}
-    networks:
-      - default
-      - evolution
+      REDIS_URL: redis://redis:6379/1
     depends_on:
+      redis:
+        condition: service_healthy
       ollama-pull:
         condition: service_completed_successfully
 
-networks:
-  evolution:
-    name: ${EVOLUTION_NETWORK:-venv_evolution-net}
-    external: true
-
 volumes:
   evolution_instances:
+  postgres_data:
+  redis_data:
   ollama_models:
